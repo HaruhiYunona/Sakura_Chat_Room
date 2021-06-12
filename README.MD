@@ -422,7 +422,7 @@ module.exports = { abcd,efg }
 
 #### 1.服务器端方法(serverScript.js)
 
-##### (1)`str_substr( star, end，str)`
+##### (1)`str_substr( star, end, str)`
 
 用途:根据字符串两端字符截取中间字符。
 
