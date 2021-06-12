@@ -10,11 +10,15 @@
 
 #### 1.下载node.js并下载Sakura_Chat_Room
 
-安装方法见菜鸟教程
+node.js安装方法见菜鸟教程
 
 > https://www.runoob.com/nodejs/nodejs-install-setup.html
 
 要注意机子是否安装了`wget`和`tar`，没装的话自己装一下
+然后
+```shell
+git clone https://github.com/HaruhiYunona/Sakura_Chat_Room
+```
 
 #### 2.依赖库
 
