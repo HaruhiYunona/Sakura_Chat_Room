@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+
+<head>
+    <!--聊天室默认的登录和注册界面-->
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="./login.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0;" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./appScript.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js" rel="external nofollow"></script>
+    <!--加载弹窗JS-->
+    <link rel="stylesheet" type="text/css" href="./sweetalert.css" />
+    <script type="text/javascript" src="./sweetalert.min.js"></script>
+    <!--加载弹窗JS-->
+</head>
+
+<body class="lr-body">
+    <input type="hidden" id="chatRoomName" value="">
+    <div class="container">
+        <div class="login-form">
+            <div class="text">登录</div>
+            <div class="form-item">
+                <!--表单区域,这里使用了JQuery。对应ID和功能是 nick:用户名,passwd:密码,vnick:验证用户名-->
+                <input type="text" placeholder="昵称" id="nick">
+                <input type="password" placeholder="密码" id="passwd">
+                <input type="hidden" id="vnick" value="">
+                <input type="hidden" id="act" value="login">
+            </div>
+            <div class="btn" id="sub">登录</div>
+            <div class="btn-back"></div>
+            <div class="other">
+                <div id="fq" style="display:inline">没有账号？</div><a id="change">去注册</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(function() {
+            //调用socket.io
+            var socket = io();
+            //提交按钮点击事件
+            $("#sub").click(function() {
+                var btn = $("#sub").html();
+                if (btn == "登录" || btn == "注册") {
+                    var nick = $("#nick").val();
+                    var pw = $("#passwd").val();
+                    var act = $("#act").val();
+                    //根据隐藏元素act的值判断登录还是注册操作,发送给服务端
+                    if (nick != "" && nick != null) {
+                        var Regx = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6,16}$/;
+                        if (Regx.test(pw)) {
+                            var msg = "{\"nickName\":\"".concat(nick, "\",\"passWd\":\"", pw, "\"}");
+                            $("#vnick").val(nick);
+                            if (act == "login") {
+                                socket.emit('login', msg);
+                                $("#sub").html("登录中,请稍等...");
+                            } else {
+                                socket.emit('register', msg);
+                                $("#sub").html("注册中,请稍等...");
+                            }
+                        } else {
+                            swal("失败!", "密码只能为6-16位数字和字母组合", "error");
+                        }
+                    } else {
+                        swal("失败!", "请输入昵称", "error");
+                    }
+                }
+            });
+            //接收服务端另一target的指令:配置聊天室登录界面名字
+            socket.on('SystemConfig', function(msg) {
+                var json = jQuery.parseJSON(msg);
+                var type = json.type;
+                if (type == "config") {
+                    if (json.configName == "chatRoomName") {
+                        var chatRoomName = json.configData;
+                        $(document).attr("title", chatRoomName + " -登录");
+                        $("#chatRoomName").val(chatRoomName);
+                    }
+                }
+            });
+            //接收来自服务端的target指令:注册/登录是否成功,报错为何
+            socket.on('SystemMsg', function(msg) {
+                var json = jQuery.parseJSON(msg);
+                var act = json.act;
+                switch (act) {
+                    case ("login"):
+                        var nickName = json.nickName;
+                        $vnick = $("#vnick").val();
+                        if (nickName == $vnick) {
+                            var result = json.result;
+                            if (result == "true") {
+                                $("#sub").html("登录");
+                                var uid = json.uid;
+                                setCookie("chat_uid", uid, 259200);
+                                swal({
+                                    title: "成功!",
+                                    text: "登录完成",
+                                    type: "success"
+                                }, function() {
+                                    window.location.replace('./index.html');
+                                });
+                            } else {
+                                $("#sub").html("登录");
+                                swal("失败!", "登录失败", "error");
+                            }
+                        }
+                        break;
+                    case ("register"):
+                        var nickName = json.nickName;
+                        $vnick = $("#vnick").val();
+                        if (nickName == $vnick) {
+                            var result = json.uid;
+                            if (result == "success") {
+                                swal("成功!", "注册成功，请登录", "success");
+                                $(".text").html("登录");
+                                $("#change").html("去注册");
+                                $("#fq").html("没有账号？");
+                                $("#sub").html("登录");
+                                $("#act").attr("value", "login");
+                                $("#nick").val("");
+                                $("#passwd").val("");
+                            } else {
+                                var cause = json.result;
+                                if (cause == "repeat") {
+                                    $("#sub").html("注册");
+                                    swal("失败!", "注册失败，您想注册的用户名已被占用", "error");
+                                } else if (cause == "passWdErr") {
+                                    $("#sub").html("注册");
+                                    $("#passwd").val("");
+                                    swal("失败!", "注册失败，您的密码格式有误", "error");
+                                } else if (cause == "failed") {
+                                    $("#sub").html("注册");
+                                    swal("失败!", "注册失败，数据库故障", "error");
+                                } else {
+                                    $("#sub").html("注册");
+                                    swal("失败!", "未知错误", "error");
+                                }
+                            }
+                        }
+                        break;
+                }
+            });
+        });
+        //登录和注册界面的切换
+        $(document).ready(function() {
+            $("#change").click(function() {
+                var change = $("#change").html();
+                var chatRoomName = $("#chatRoomName").val();
+                if (change == "去注册") {
+                    $(document).attr("title", chatRoomName + " -注册");
+                    $(".text").html("注册");
+                    $("#change").html("去登录");
+                    $("#fq").html("已有账号->");
+                    $("#sub").html("注册");
+                    $("#act").attr("value", "register");
+                } else {
+                    $(document).attr("title", chatRoomName + " -登录");
+                    $(".text").html("登录");
+                    $("#change").html("去注册");
+                    $("#fq").html("没有账号？");
+                    $("#sub").html("登录");
+                    $("#act").attr("value", "login");
+                }
+            });
+
+        });
+    </script>
+</body>
+
+</html>

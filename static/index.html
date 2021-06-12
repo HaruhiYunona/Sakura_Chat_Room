@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+
+<head>
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0;" />
+    <script src="/socket.io/socket.io.js"></script>
+    <!--appScript.js里定义了一些有意思的小方法-->
+    <script src="./appScript.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js" rel="external nofollow"></script>
+    <!--加载弹窗JS-->
+    <link rel="stylesheet" type="text/css" href="./sweetalert.css" />
+    <script type="text/javascript" src="./sweetalert.min.js"></script>
+    <!--加载弹窗JS-->
+</head>
+
+<body>
+    <header>
+        <div class="top-bar">
+            <div class="chat-room-title">
+                聊天室
+            </div>
+            <div id="lr" style="float:right;margin-right: 40px;margin-top: -34px;font-size: 14px;color: blueviolet;">登陆</div>
+        </div>
+        <script>
+            $("#lr").click(function() {
+                if ($("#lr").html() == "登陆") {
+                    window.location.replace("./login-reg.html");
+                } else {
+                    //登出功能,登出后利用swal弹窗内夹跳转跳到登录界面
+                    setCookie("chat_uid", "", -432, 000);
+                    swal({
+                        title: "成功!",
+                        text: "已登出",
+                        type: "success"
+                    }, function() {
+                        window.location.replace('./login-reg.html');
+                    });
+                }
+            });
+        </script>
+    </header>
+    <script>
+        $(function() {
+            var socket = io();
+            $('.submit-chat').click(function() {
+                //向服务器端提交输入框内容
+                if ($("#messageInput").val() != "") {
+                    var uuid = $_COOKIE("chat_uid");
+                    var inf = $('#messageInput').val();
+                    var inf = inf.replace(RegExp("<", "g"), "&lt;");
+                    var inf = inf.replace(RegExp(">", "g"), "&gt;");
+                    var inf = inf.replace(RegExp("\"", "g"), "&quot;");
+                    var ms = "{\"uid\":\"".concat(uuid, "\",\"msg\":\"", inf, "\",\"type\":\"userChat\"}");
+                    socket.emit('chat message', ms);
+                    $('#messageInput').val('');
+                }
+            });
+            //监听服务器端配置消息,配置聊天室名字
+            socket.on('SystemConfig', function(msg) {
+                var json = jQuery.parseJSON(msg);
+                var type = json.type;
+                if (type == "config") {
+                    if (json.configName == "chatRoomName") {
+                        var chatRoomName = json.configData;
+                        $(document).attr("title", chatRoomName);
+                        $(".chat-room-title").html(chatRoomName);
+                    }
+                }
+            });
+
+            //接收服务端广播
+            socket.on('chat message', function(msg) {
+                var json = jQuery.parseJSON(msg);
+                var type = json.type;
+                //分析类型并且向页面添加相应的元素
+                switch (type) {
+                    //聊天室提示
+                    case ("notice"):
+                        var msg = json.msg;
+                        var htm = $("<div class=\"notice-bar\">" + msg + "</div>");
+                        $("#messages").append(htm);
+                        //每次收到送消息自动置底
+                        $(window).scrollTop($("#messages")[0].scrollHeight);
+                        break;
+                        //bot消息
+                    case ("botChat"):
+                        var time = dateTime();
+                        var msg = json.msg;
+                        var botname = json.botname;
+                        var botImg = json.botImg;
+                        var botFunc = json.botFunc;
+                        var htm = $("<li><div class=\"ima-box\"><div class=\"ima-info-bar\"><div class=\"ima-name\">" + botname + "</div><div class=\"ima-tit\">BOT</div><div class=\"ima-lv\">" + botFunc + "</div></div><br><div class=\"ima-chat-bar\"><img src=\"" + botImg + "\" class=\"headimg\"><div class=\"ima-chat-info\"><div class=\"ima-massage\">" + msg + "</div><div class=\"ima-time\">" + time + "</div></div></div></div></li>");
+                        $("#messages").append(htm);
+                        $(window).scrollTop($("#messages")[0].scrollHeight);
+                        break;
+                        //用户消息
+                    case ("userChat"):
+                        var uid = json.uid;
+                        var msg = json.msg;
+                        var glory = json.glory;
+                        var lv = json.lv;
+                        var headimg = json.headimg;
+                        var nickName = json.nickName;
+                        if (glory !== null && vip !== "") {
+                            var vip = ">".concat(glory, "</div>");
+                        } else {
+                            var vip = "style=\"display:none\"></div>";
+                        }
+                        var time = dateTime();
+                        var uuid = $_COOKIE("chat_uid");
+                        if (uuid == uid) {
+                            var htm = $("<li><div class=\"ima-box-mine\"><div class=\"ima-info-bar-mine\"><div class=\"ima-lv-mine\">" + lv + "</div><div class=\"ima-tit-mine\" " + vip + "<div class=\"ima-name-mine\">" + nickName + "</div></div><br><div class=\"ima-chat-bar-mine\"><div class=\"ima-chat-info-mine\"><div class=\"ima-massage-mine\">" + msg + "</div><div class=\"ima-time-mine\">" + time + "</div></div><img src=\"" + headimg + "\" class=\"headimg-mine\"></div></div></li>");
+                        } else {
+                            var htm = $("<li><div class=\"ima-box\"><div class=\"ima-info-bar\"><div class=\"ima-name\">" + nickName + "</div><div class=\"ima-tit\" " + vip + "<div class=\"ima-lv\">" + lv + "</div></div><br><div class=\"ima-chat-bar\"><img src=\"" + headimg + "\" class=\"headimg\"><div class=\"ima-chat-info\"><div class=\"ima-massage\">" + msg + "</div><div class=\"ima-time\">" + time + "</div></div></div></div></li>");
+                        }
+                        $("#messages").append(htm);
+                        $(window).scrollTop($("#messages")[0].scrollHeight);
+                        break;
+                        /*
+                         **您想要增加的消息类型代码可以在这里填写
+                         */
+                }
+            });
+        });
+    </script>
+    <ul id="messages">
+    </ul>
+    <div class="btm-bar">
+        <input id="messageInput" autocomplete="off" class="input-chat" /><button class="submit-chat" type="submit"><img src="http://api.acghouse.fun/img/send.png" style="width:40px;margin-top:9px;"></button>
+    </div>
+    <script>
+        //未登录直接跳转到登录界面,已登录改变右上角功能键为登出
+        $(document).ready(function() {
+            if ($_COOKIE("chat_uid") === null || $_COOKIE("chat_uid") == "") {
+                swal({
+                    title: "注意!",
+                    text: "您需要登录才可以发言",
+                    type: "error"
+                }, function() {
+                    window.location.replace('./login-reg.html');
+                });
+            } else {
+                $("#lr").html("登出");
+            }
+        });
+    </script>
+</body>
+
+</html>
