@@ -6,7 +6,7 @@
  */
 function setCookie(name, value, time) {
     var exp = new Date();
-    exp.setTime(exp.getTime() + time * 1);
+    exp.setTime(exp.getTime() + time * 1000);
     document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
 }
 
