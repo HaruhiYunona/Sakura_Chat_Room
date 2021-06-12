@@ -459,7 +459,7 @@ console.log(str_substr("bbb","qqq",string));
 
 ##### (4)`userInfoQuery(uid)`
 
-*这是一个异步方法,请使用`userInfoQuery(uid).then((result)=>{ //your code })` 接收结果。如果在其他js文件中调用,请加上模块名`serverScript.userRegister(uid).then((result)=>{ //your code })`
+*这是一个异步方法,请使用`userInfoQuery(uid).then((result)=>{ //your code })` 接收结果。如果在其他js文件中调用,请加上模块名`serverScript.userInfoQuery(uid).then((result)=>{ //your code })`
 
 用途:用户信息查询
 
