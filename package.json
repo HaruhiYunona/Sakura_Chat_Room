@@ -1,0 +1,11 @@
+{
+    "name": "Sakura_Chat_Room",
+    "version": "1.0.1",
+    "description": "A good webshocket chat room based by node.js",
+    "dependencies": {
+        "express": "^4.17.1",
+        "fs": "^0.0.1-security",
+        "mysql": "^2.18.1",
+        "socket.io": "^4.1.2"
+    }
+}
