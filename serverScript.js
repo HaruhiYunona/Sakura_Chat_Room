@@ -1,3 +1,41 @@
+/*Func:处理数据库获取出来的数据
+ **@data: 输入的数据库数据
+ */
+function dataFormat(data) {
+    var result = JSON.stringify(data);
+    var json = str_substr('[', ']', result);
+    if (json !== "" && json !== null) {
+        var json = JSON.parse(json);
+    } else {
+        var json = false;
+    }
+    return json;
+}
+
+
+
+/**
+ * 加密方法
+ * @param key      加密key
+ * @param data     数据
+ * @returns string
+ */
+var crypto = require('crypto');
+var encrypt = function(key, data) {
+    var cipher = crypto.createCipheriv('aes-128-cbc', key, "1111111111111111");
+    var crypted = cipher.update(data, 'utf8', 'binary');
+    crypted += cipher.final('binary');
+    crypted = Buffer.from(crypted, 'binary').toString('base64');
+    return crypted;
+};
+var decrypt = function(key, crypted) {
+    crypted = Buffer.from(crypted, 'base64').toString('binary');
+    var decipher = crypto.createDecipheriv('aes-128-cbc', key, "1111111111111111");
+    var decoded = decipher.update(crypted, 'binary', 'utf8');
+    decoded += decipher.final('utf8');
+    return decoded;
+};
+
 /** Func:根据两端截取字符串
  ** @start: 起始字符串
  ** @end:结束字符串
@@ -37,20 +75,8 @@ var userRegister = function(nickName, passWd) {
                 console.log('[INSERT ERROR] - ', err.message);
                 return;
             }
-            /** 将查询结果JSON对象化(这里有个天坑，查询结果是个四不像的数组，要么用 underscore 的map方法处理要么和我这样转化为JSON判断)
-             ** 将查询结果处理完后如果查询结果为空用无关紧要的JSON代替该JSON，否则直接该JSON转化为JSON对象。
-             ** 值得注意的是如果您直接将该JSON转换为JSON对象，当数据库返回空值时,你的JSON.parse会直接抛出异常中断程序。
-             */
-            var result = JSON.stringify(result);
-            var json = str_substr('[', ']', result);
-            if (json !== "" && json !== null) {
-                var json = JSON.parse(json);
-            } else {
-                var json = "{\"u\":1}";
-                var json = JSON.parse(json);
-            }
-            //上面提到用无关紧要的JSON替换了空JSON，由于无关紧要的JSON不影响判断JSON中是否包含用户数据该有的键名,就能够区别该用户名是否被注册
-            if (json.hasOwnProperty("nickName")) {
+            var json = dataFormat(result);
+            if (json !== false) {
                 var uid = json.uid;
             } else {
                 var uid = null;
@@ -62,8 +88,9 @@ var userRegister = function(nickName, passWd) {
                 //判断没有重复的用户名，开始插入注册数据
                 var Regx = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6,16}$/;
                 if (Regx.test(passWd)) {
+                    var passWord = encrypt(config.chatConfig('key'), passWd);
                     var addSql = "INSERT INTO `".concat(config.databaseConfig('database'), "`.`user` (`uid`, `nickName`, `passWd`, `exp`, `glory`) VALUES (NULL, ?, ?, ?, ?)");
-                    var addSqlParams = [nickName, passWd, '10', '用户'];
+                    var addSqlParams = [nickName, passWord, '10', '用户'];
                     connection.query(addSql, addSqlParams, function(err, result) {
                         if (err) {
                             console.log('[INSERT ERROR] - ', err.message);
@@ -115,22 +142,16 @@ var userLogin = function(nickName, passWd) {
         connection.connect();
         var sql = "SELECT * FROM `user` WHERE `nickName` = '".concat(nickName, "'");
         connection.query(sql, function(err, result) {
-            var result = JSON.stringify(result);
-            var json = str_substr('[', ']', result);
-            if (json !== "" && json !== null) {
-                var json = JSON.parse(json);
-            } else {
-                var json = "{\"u\":1}";
-                var json = JSON.parse(json);
-            }
-            if (json.hasOwnProperty("nickName")) {
+            var json = dataFormat(result);
+            if (json !== false) {
                 var dbpassWd = json.passWd;
                 var uid = json.uid;
             } else {
                 var uid = null;
                 var dbpassWd = null;
             }
-            if (dbpassWd == passWd) {
+            var repassWd = encrypt(config.chatConfig('key'), passWd);
+            if (dbpassWd == repassWd) {
                 var info = uid;
             } else {
                 var info = false;
@@ -313,4 +334,4 @@ function dateTime() {
 }
 
 //导出js模块
-module.exports = { str_substr, userRegister, userLogin, userInfoQuery, sendMessage, writeLog, timeStample, dateTime }
+module.exports = { str_substr, userRegister, userLogin, userInfoQuery, sendMessage, writeLog, timeStample, dateTime, dataFormat, encrypt, decrypt }
