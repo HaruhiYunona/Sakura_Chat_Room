@@ -7,6 +7,7 @@ function chatConfig(name) {
     config['name'] = "Sakura聊天室"; //聊天室名字
     config['hosting'] = "localhost"; //服务器IP
     config['port'] = 5555; //Websocket端口
+    config['key'] = "d2afd04d4559b4c0"; //程序加密所用秘钥，16位
     config['webApp'] = "index.html"; //web客户端文件，没有必要就不动
     config['serverScript'] = "serverScript"; //独立出来的服务端逻辑文件,不要带.js后缀
     config['appFile'] = "static"; //客户端所需文件所在文件夹
