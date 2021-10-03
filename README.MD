@@ -62,6 +62,7 @@ vi ./config.js
 config['name'] = "Sakura聊天室";  //换成您想要的名字
 config['hosting'] = "localhost";  //换成您自己服务器的ip
 config['port'] = 5555;  //换成您刚刚开放的端口
+config['port'] = "1234567890123456";  //需要刚好16个字符,可以用16位md5生成器来生成16个随机字符
 config['logWrite'] = true;  //您看情况配置,true会将log写入到./log.txt,false则不输出log,仅显示于命令行
 config['logTime'] = "timeStample";  //设置timeStample,log会输出十位数的时间戳。而dateTime则会输出日期格式的时间
 ```
@@ -512,6 +513,21 @@ console.log(str_substr("bbb","qqq",string));
 timeStample:十位时间戳
 
 dateTime:日期
+
+##### (8)`encrypt(key,data)`和`decrypt(key,data)`
+
+用途:加密与解密
+
+key:秘钥
+
+data:要加密文字或者密文
+
+##### (9)`dataFormat(data)`
+
+用途:格式化数据库取出的数据
+
+data:数据库取出的数据
+
 
 #### 2.客户端方法(appScript.js)
 
